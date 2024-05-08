@@ -84,6 +84,10 @@ short quizMode = 0;
 
 short currentScore = 0;
 
+//Cursor Variable
+short x = 0;
+short y = 0;
+
 //Funciton Defintiions
 void A_CHANGE_1(); 
 void A_CHANGE_2();
@@ -92,11 +96,19 @@ void Push_2();
 void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2, bool push1, bool push2);
 uint16_t randomColor();
 void squareTransition(uint16_t color);
+
+//Reset Numbers
 void resetAdd();
 void resetSub();
 void resetMult();
 void resetDiv();
 void resetQuiz();
+
+//Different Functions
+void addMode(int push1, int push2);
+void subtractMode(int push1, int push2);
+void multiplyMode(int push1, int push2);
+void divideMode(int push1, int push2);
 
 void setup() {
     //Setup Screen
@@ -121,7 +133,7 @@ void setup() {
 
     gfx->fillRect(gfx->width()/2 -20, gfx->height()/2 - 6, 40, 20, WHITE);
     gfx->setCursor(gfx->width()/2-20, gfx->height()/2);
-    gfx->print("Math Quest");
+    gfx->print(Title);
     gfx->setCursor(gfx->width()/2-50, gfx->height()/2+6);
     gfx->setTextSize(3, 3);
     gfx->print("Press Enter to Continue");
@@ -147,7 +159,7 @@ void setup() {
 
 void loop()
 {
-  updateScreen(0, 0, 0, 0, 0, 0);
+
 }
 
 void A_CHANGE_1() { // Interrupt Service Routine (ISR)
@@ -250,6 +262,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->setCursor(gfx->width()/2 - 30, gfx->height()/2+5);
           gfx->print(addName);
           if (push2 == 1 || push2 == 1) {
+            gfx->fillScreen(RED);
+            gfx->setTextColor(WHITE);
             resetAdd();
             mode = 2;
           }
@@ -260,6 +274,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
           gfx->print(subName);
           if (push2 == 1 || push2 == 1) {
+            gfx->fillScreen(BLUE);
+            gfx->setTextColor(WHITE);
             resetSub();
             mode = 3;
           }
@@ -270,6 +286,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
           gfx->print(multiName);
           if (push2 == 1 || push2 == 1) {
+            gfx->fillScreen(GREEN);
+            gfx->setTextColor(BLACK);
             resetMult();
             mode = 4;
           }
@@ -280,6 +298,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
           gfx->print(divName);
           if (push2 == 1 || push2 == 1) {
+            gfx->fillScreen(PURPLE);
+            gfx->setTextColor(WHITE);
             resetDiv();
             mode = 5;
           }
@@ -290,27 +310,56 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
           gfx->print(quizName);
           if (push2 == 1 || push2 == 1) {
+            gfx->fillScreen(BLACK);
+            gfx->setTextColor(WHITE);
             resetQuiz();
             mode = 6;
           }
           break;
       }
       break;
-    //Addiiton
+    //Additon
     case 2:
-      
+      gfx->fillScreen(RED);
+      gfx->setTextColor(WHITE);
+      addMode(push1, push2);
       break;
     //Subtraction
     case 3:
+      gfx->fillScreen(BLUE);
+      gfx->setTextColor(WHITE);
+      subtractMode(push1, push2);
       break;
     //Multiplication
     case 4:
+      gfx->fillScreen(GREEN);
+      gfx->setTextColor(BLACK);
+      multiplyMode(push1, push2);
       break;
     //Division
     case 5:
+      gfx->fillScreen(PURPLE);
+      gfx->setTextColor(WHITE);
+      divideMode(push1, push2);
       break;
     //Quiz Mode
     case 6:
+      gfx->fillScreen(BLACK);
+      gfx->setTextColor(WHITE);
+      switch(quizMode) {
+        case 0:
+          addMode(push1, push2);
+          break;
+        case 1:
+          subtractMode(push1, push2);
+          break;
+        case 2:
+          multiplyMode(push1, push2);
+          break;
+        case 3:
+          divideMode(push1, push2);
+          break;
+      }
       break;
   }
 }
@@ -333,6 +382,8 @@ void resetAdd() {
   sum = random(0, 99);
   addNum1 = random(0, 99);
   addNum2 = sum - addNum1;
+  pulseCount1 = 0;
+  pulseCount2 = 0;
 }
 
 void resetSub() {
@@ -342,6 +393,8 @@ void resetSub() {
   subNum1 = random(0, 99);
   subNum2 = random(0, addNum1);
   difference = subNum1 - subNum2;
+  pulseCount1 = 0;
+  pulseCount2 = 0;
 }
 
 void resetMult() {
@@ -351,6 +404,8 @@ void resetMult() {
   multNum1 = random(0, 9);
   multNum2 = random(0, 9);
   product = multNum1 * multNum2;
+  pulseCount1 = 0;
+  pulseCount2 = 0;
 }
 
 void resetDiv() {
@@ -360,6 +415,8 @@ void resetDiv() {
   divNum2 = random(0, 9);
   quotient = random(0, 9);
   divNum1 = divNum2 * quotient;
+  pulseCount1 = 0;
+  pulseCount2 = 0;
 }
 
 void resetQuiz() {
@@ -379,5 +436,146 @@ void resetQuiz() {
       break;
     case 3:
       resetDiv();
+  }
+}
+
+void addMode(int push1, int push2) {
+  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->print(currentScore);
+  gfx->setCursor(0, gfx->height()/2);
+  gfx->print(addNum1); gfx->print(" + "); gfx->print(addNum2); gfx->print(" = ");
+  if (pulseCount1 != 0) gfx->print(pulseCount1 % 10);
+  else gfx->print(" ");
+  gfx->print(pulseCount2 % 10);
+  if((push1 && !push2) ||(!push1 && push2)) {
+    short calculatedSum = (pulseCount1%10)*10 + pulseCount2%10;
+    if (sum == calculatedSum) {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("CORRECT!");
+      gfx->setTextSize(5,5);
+      currentScore++;
+      if (mode == 6) resetQuiz();
+      else resetAdd();
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    } else {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("WRONG!");
+      gfx->setTextSize(5,5);
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    }
+  }
+  if (push1 && push2) {
+    mode = 1;
+    currentScore = 0;
+    updateScreen(0,0,0,0,0,0);
+  }
+}
+void subtractMode(int push1, int push2) {
+  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->print(currentScore);
+  gfx->setCursor(0, gfx->height()/2);
+  gfx->print(subNum1); gfx->print(" - "); gfx->print(subNum2); gfx->print(" = ");
+  if (pulseCount1 != 0) gfx->print(pulseCount1 % 10);
+  else gfx->print(" ");
+  gfx->print(pulseCount2 % 10);
+  if((push1 && !push2) ||(!push1 && push2)) {
+    short calculatedDifference = (pulseCount1%10)*10 + pulseCount2%10;
+    if (difference == calculatedDifference) {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("CORRECT!");
+      gfx->setTextSize(5,5);
+      currentScore++;
+      if (mode == 6) resetQuiz();
+      else resetSub();
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    } else {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("WRONG!");
+      gfx->setTextSize(5,5);
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    }
+  }
+  if (push1 && push2) {
+    mode = 1;
+    currentScore = 0;
+    updateScreen(0,0,0,0,0,0);
+  }
+}
+void multiplyMode(int push1, int push2) {
+  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->print(currentScore);
+  gfx->setCursor(0, gfx->height()/2);
+  gfx->print(multNum1); gfx->print(" * "); gfx->print(multNum2); gfx->print(" = ");
+  if (pulseCount1 != 0) gfx->print(pulseCount1 % 10);
+  else gfx->print(" ");
+  gfx->print(pulseCount2 % 10);
+  if((push1 && !push2) ||(!push1 && push2)) {
+    short calculatedProduct = (pulseCount1%10)*10 + pulseCount2%10;
+    if (product == calculatedProduct) {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("CORRECT!");
+      gfx->setTextSize(5,5);
+      currentScore++;
+      if (mode == 6) resetQuiz();
+      else resetMult();
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    } else {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("WRONG!");
+      gfx->setTextSize(5,5);
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    }
+  }
+  if (push1 && push2) {
+    mode = 1;
+    currentScore = 0;
+    updateScreen(0,0,0,0,0,0);
+  }
+}
+void divideMode(int push1, int push2) {
+  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->print(currentScore);
+  gfx->setCursor(0, gfx->height()/2);
+  gfx->print(divNum1); gfx->print(" ÷ "); gfx->print(divNum2); gfx->print(" = ");
+  if (pulseCount1 != 0) gfx->print(pulseCount1 % 10);
+  else gfx->print(" ");
+  gfx->print(pulseCount2 % 10);
+  if((push1 && !push2) ||(!push1 && push2)) {
+    short calculatedQuotient = (pulseCount1%10)*10 + pulseCount2%10;
+    if (quotient == calculatedQuotient) {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("CORRECT!");
+      gfx->setTextSize(5,5);
+      currentScore++;
+      if (mode == 6) resetQuiz();
+      else resetDiv();
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    } else {
+      gfx->setCursor(10, 10);
+      gfx->setTextSize(3, 3);
+      gfx->print("WRONG!");
+      gfx->setTextSize(5,5);
+      delay(1000);
+      updateScreen(0,0,0,0,0,0);
+    }
+  }
+  if (push1 && push2) {
+    mode = 1;
+    currentScore = 0;
+    updateScreen(0,0,0,0,0,0);
   }
 }
