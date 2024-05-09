@@ -1,5 +1,6 @@
 #include <Arduino_GFX_Library.h>
 #include <Arduino.h>
+#include "soc/rtc_wdt.h"
 
 //Parameters for Screen
 #define TFT_CS 33
@@ -88,6 +89,15 @@ short currentScore = 0;
 short x = 0;
 short y = 0;
 
+//Stup Fucking variables eat shit interupts
+bool forward1 = false;
+bool backwards1 = false; 
+bool forward2 = false; 
+bool backward2= false; 
+bool push1 = false; 
+bool push2 = false;
+
+
 //Funciton Defintiions
 void A_CHANGE_1(); 
 void A_CHANGE_2();
@@ -110,10 +120,16 @@ void subtractMode(int push1, int push2);
 void multiplyMode(int push1, int push2);
 void divideMode(int push1, int push2);
 
+void resetInterupts();
+
 void setup() {
+  //Fuck you watchdog
+  rtc_wdt_protect_off();
+  rtc_wdt_disable();
     //Setup Screen
     gfx->begin();
     gfx->fillScreen(WHITE);
+    Serial.begin(9600);
 
 #ifdef TFT_BL
     pinMode(TFT_BL, OUTPUT);
@@ -121,122 +137,146 @@ void setup() {
 #endif
   //Finalize screen setup and do opening menu screen
     gfx->setTextSize(5, 5);
-    gfx->setCursor(gfx->width()/2-20, gfx->height()/2);
+    gfx->setCursor(20, gfx->height()/2-5);
     char Title[10] = {'M', 'a', 't', 'h', 0x20, 'Q', 'u', 'e', 's', 't'};
     for (int i = 0; i < 10; i++) {
       gfx->setTextColor(randomColor());
       gfx->print(Title[i]);
-      delay(10);
+      delay(1000);
     }
 
     delay(1000);
 
-    gfx->fillRect(gfx->width()/2 -20, gfx->height()/2 - 6, 40, 20, WHITE);
-    gfx->setCursor(gfx->width()/2-20, gfx->height()/2);
-    gfx->print(Title);
-    gfx->setCursor(gfx->width()/2-50, gfx->height()/2+6);
-    gfx->setTextSize(3, 3);
+    gfx->fillScreen(WHITE);
+    gfx->setCursor(20, gfx->height()/2-5);
+    gfx->print("Math Quest");
+    gfx->setCursor(20, gfx->height()/2+50);
+    gfx->setTextSize(2, 2);
     gfx->print("Press Enter to Continue");
+
+    delay(1000);
 
     //Setup Encoder 1
     SIG_B_1 = digitalRead (E1_OUT_B); // Current state of B
+    //crashing debug, see if excecution reaches here
+    Serial.println("Encoder 1 step 1");
+
+
     SIG_A_1 = SIG_B_1 > 0 ? 0 : 1; // Let them be different
     // Attach iterrupt for state change, not rising or falling edges
     attachInterrupt (digitalPinToInterrupt (E1_OUT_A), A_CHANGE_1, CHANGE);
+    //debug
+    Serial.println("encoder 1 step 2");
     
     //Setup Encoder 2
     SIG_B_2 = digitalRead (E2_OUT_B); // Current state of B
     SIG_A_2 = SIG_B_1 > 0 ? 0 : 1; // Let them be different
     // Attach iterrupt for state change, not rising or falling edges
     attachInterrupt (digitalPinToInterrupt (E2_OUT_A), A_CHANGE_2, CHANGE);
+    //debug
+    Serial.println("encoder 2 step 1");
+
+
 
     // Attach Interrupt to Push-Part of Board
     attachInterrupt (digitalPinToInterrupt(E1_PUSH), Push_1, CHANGE);
-    attachInterrupt (digitalPinToInterrupt(E2_PUSH), Push_2, CHANGE);
+    //debug
+    Serial.println("Attached interrupt 1");
 
-    updateScreen(0, 0, 0, 0, 0, 0);
+    attachInterrupt (digitalPinToInterrupt(E2_PUSH), Push_2, CHANGE);
+    Serial.println("Attached interrupt 2");
+
+    //updateScreen(0, 0, 0, 0, 0, 0);
+    Serial.println("Screen Interrupt");
 }
 
 void loop()
 {
-
+  /*
+  if (mode == 0) {
+    gfx->drawEllipse(random(0, 255), random(0, 255), random(1, 10), random(1, 10), randomColor());
+    delay(5000);
+  }
+  */
+  updateScreen(forward1, backwards1, forward2, backward2, push1, push2);
+  delay(10);
 }
 
 void A_CHANGE_1() { // Interrupt Service Routine (ISR)
   detachInterrupt (0); // Important
+  resetInterupts();
   SIG_A_1 = digitalRead (E1_OUT_A); // Read state of A
   SIG_B_1 = digitalRead (E1_OUT_B); // Read state of B
+  Serial.print("CHANGE 1, Sig A 1 "); Serial.println(SIG_A_1);
+  Serial.print("CHANGE 1, SIg B 2 "); Serial.println(SIG_B_1);
  
   if ((SIG_B_1 == SIG_A_1) && (lastSIG_B_1 != SIG_B_1)) {
     pulseCount1--; // Counter-clockwise rotation
     lastSIG_B_1 = SIG_B_1;
-    updateScreen(0, 1, 0, 0, 0, 0);
+    backwards1 = true;
   }
  
   else if ((SIG_B_1 != SIG_A_1) && (lastSIG_B_1 == SIG_B_1)) {
     pulseCount1++; // Clockwise rotation
     lastSIG_B_1 = SIG_B_1 > 0 ? 0 : 1; // Save last state of B
-    updateScreen(1, 0, 0, 0, 0, 0);
+    forward1 = true;
   }
   attachInterrupt (digitalPinToInterrupt (E1_OUT_A), A_CHANGE_1, CHANGE);
 }
 
 void A_CHANGE_2() { // Interrupt Service Routine (ISR)
   detachInterrupt (0); // Important
+  resetInterupts();
   SIG_A_2 = digitalRead (E2_OUT_A); // Read state of A
   SIG_B_2 = digitalRead (E2_OUT_B); // Read state of B
+  Serial.print("CHANGE 2, Sig A 1 "); Serial.println(SIG_A_1);
+  Serial.print("CHANGE 2, SIg B 2 "); Serial.println(SIG_B_1);
  
   if ((SIG_B_2 == SIG_A_2) && (lastSIG_B_2 != SIG_B_2)) {
     pulseCount2--; // Counter-clockwise rotation
     lastSIG_B_2 = SIG_B_2;
-    updateScreen(0, 0, 0, 1, 0, 0);
+    backward2 = true;
   }
  
   else if ((SIG_B_2 != SIG_A_2) && (lastSIG_B_2 == SIG_B_2)) {
     pulseCount2++; // Clockwise rotation
     lastSIG_B_2 = SIG_B_2 > 0 ? 0 : 1; // Save last state of B
-    updateScreen(0, 0, 1, 0, 0, 0);
+    forward2 = true;
   }
   attachInterrupt (digitalPinToInterrupt (E2_OUT_A), A_CHANGE_2, CHANGE);
 }
 
 void Push_1() {
   detachInterrupt(0);
+  resetInterupts();
   SIG_PUSH_1 = digitalRead(E1_PUSH);
-  SIG_PUSH_2 = 0;
-  for (int d = 0; d < 10; d++) {
-    if (digitalRead(E2_PUSH) == 1) {
-      SIG_PUSH_2 = digitalRead(E2_PUSH);
-      break;
-    }
-    delay(1);
-  }
+  SIG_PUSH_2 = digitalRead(E2_PUSH);
+  Serial.print("PUSH1, E1 Push "); Serial.println(SIG_PUSH_1);
+  Serial.print("PUSH2, E2 Push "); Serial.println(SIG_PUSH_2);
   
   if (SIG_PUSH_1 == 1 & SIG_PUSH_2 == 1) {
-    updateScreen(0, 0, 0, 0, 1, 1);
+    push1 = true;
+    push2 = true;
   }
-  else {
-    updateScreen(0, 0, 0, 0, 1, 0);
+  else if (SIG_PUSH_1 == 1) {
+    push1 = true;
   }
   attachInterrupt (digitalPinToInterrupt(E1_PUSH), Push_1, CHANGE);
 }
 
 void Push_2() {
   detachInterrupt(0);
-  SIG_PUSH_1 = 0;
+  resetInterupts();
+  SIG_PUSH_1 = digitalRead(E1_PUSH);
   SIG_PUSH_2 = digitalRead(E2_PUSH);
-  for (int d = 0; d < 10; d++) {
-    if (digitalRead(E1_PUSH) == 1) {
-      SIG_PUSH_1 = digitalRead(E1_PUSH);
-      break;
-    }
-    delay(1);
-  }
+  Serial.print("PUSH2, E1 Push "); Serial.println(SIG_PUSH_1);
+  Serial.print("PUSH2, E2 Push "); Serial.println(SIG_PUSH_2);
 
   if (SIG_PUSH_1 == 1 && SIG_PUSH_2 == 1) {
-    updateScreen(0, 0, 0, 0, 1, 1);
-  } else {
-    updateScreen(0, 0, 0, 0, 0, 1);
+    push1 = true;
+    push2 = true;
+  } else if (SIG_PUSH_2 == 1) {
+    push2 = true;
   }
   attachInterrupt (digitalPinToInterrupt(E2_PUSH), Push_2, CHANGE);
 }
@@ -248,9 +288,6 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
       if (push1 == 1 || push2 == 1) {
         gfx->fillScreen(WHITE);
         mode = 1;
-      } else {
-        gfx->drawEllipse(random(0, 255), random(0, 255), random(1, 10), random(1, 10), randomColor());
-        delay(5000);
       }
       break;
   //Main Menu
@@ -578,4 +615,8 @@ void divideMode(int push1, int push2) {
     currentScore = 0;
     updateScreen(0,0,0,0,0,0);
   }
+}
+
+void resetInterupts() {
+  forward1, forward2, backwards1, backward2, push1, push2 = false;
 }
