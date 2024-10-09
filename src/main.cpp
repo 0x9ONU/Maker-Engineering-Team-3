@@ -11,7 +11,7 @@
 #define TFT_LED 22
 #define E1_OUT_A 26
 #define E1_OUT_B 25
-#define E1_PUSH 35
+#define E1_PUSH 32
 #define E2_OUT_A 12
 #define E2_OUT_B 14
 #define E2_PUSH 21
@@ -46,11 +46,11 @@ int counter = 0;
 int counter_2 = 0;
 
 bool push = 0;
-bool push_2 = 0;
-bool lastPush = 0;
+bool lastPush = false;
 
 void read_encoder();
 void read_encoder_2();
+void read_push();
 
 //Mode Settings
 short mode = 0;
@@ -142,7 +142,8 @@ gfx->setCursor(20, gfx->height()/2-5);
 gfx->print("Math Quest");
 gfx->setCursor(20, gfx->height()/2+50);
 gfx->setTextSize(2, 2);
-gfx->print("Press Enter to Continue");
+delay(2000);
+updateScreen(0, 0, 0, 0, 1, 0);
 
 // Set encoder pins and attach interrupts
 pinMode(E1_OUT_A, INPUT_PULLUP);
@@ -164,11 +165,11 @@ void loop()
   static int lastCounter_2 = 0;
   // If count has changed print the new value to serial
   if(counter != lastCounter){
-    if (counter_2 < 0) counter_2 = 0;
-    if (counter_2 > 99) counter_2 = 99;
-    if (counter_2 < lastCounter_2) updateScreen(1, 0, 0, 0, 0, 0);
-    if (counter_2 > lastCounter_2) updateScreen(0, 1, 0, 0, 0, 0);
-    lastCounter_2 = counter_2;
+    if (counter < 0) counter = 0;
+    if (counter > 99) counter = 99;
+    if (counter < lastCounter) updateScreen(1, 0, 0, 0, 0, 0);
+    if (counter > lastCounter) updateScreen(0, 1, 0, 0, 0, 0);
+    lastCounter = counter;
   }
 
   if(counter_2 != lastCounter_2){
@@ -179,22 +180,22 @@ void loop()
     lastCounter_2 = counter_2;
   }
 
-  bool push_input = digitalRead(E1_PUSH) | digitalRead(E2_PUSH);
+  bool push = !digitalRead(E1_PUSH) | !digitalRead(E2_PUSH);
+  bool menu_button = !digitalRead(MENU_BUTTON);
+  Serial.print(push);
+  Serial.print("     ");
+  Serial.println(menu_button);
 
-  if (push_input && !lastPush) {
+  if (push && !lastPush) {
     updateScreen(0, 0, 0, 0, 1, 0);
     lastPush = true;
   }
-  else if (!push_input && lastPush) {
+  else if (!push && lastPush) {
     lastPush = false;
   }
 
-  if (digitalRead(MENU_BUTTON) && !lastMenu) {
+  if (menu_button) {
     updateScreen(0, 0, 0, 0, 0, 1);
-    lastMenu = true;
-  }
-  else if (!digitalRead(MENU_BUTTON) && !lastMenu) {
-    lastMenu = false;
   }
 }
 
@@ -222,8 +223,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->fillScreen(RED);
           gfx->setTextColor(WHITE);
           gfx->setCursor(gfx->width()/2 - 30, gfx->height()/2+5);
-          gfx->print(addName);
-          if (push && !back) {
+          gfx->print("Add");
+          if (push) {
             gfx->fillScreen(RED);
             gfx->setTextColor(WHITE);
             resetAdd();
@@ -234,8 +235,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->fillScreen(BLUE);
           gfx->setTextColor(WHITE);
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
-          gfx->print(subName);
-          if (push && !back) {
+          gfx->print("Subtract");
+          if (push) {
             gfx->fillScreen(BLUE);
             gfx->setTextColor(WHITE);
             resetSub();
@@ -246,8 +247,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->fillScreen(GREEN);
           gfx->setTextColor(BLACK);
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
-          gfx->print(multiName);
-          if (push && !back) {
+          gfx->print("Multiply");
+          if (push) {
             gfx->fillScreen(GREEN);
             gfx->setTextColor(BLACK);
             resetMult();
@@ -258,8 +259,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->fillScreen(PURPLE);
           gfx->setTextColor(WHITE);
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
-          gfx->print(divName);
-          if (push && !back) {
+          gfx->print("Division");
+          if (push) {
             gfx->fillScreen(PURPLE);
             gfx->setTextColor(WHITE);
             resetDiv();
@@ -270,8 +271,8 @@ void updateScreen(bool forward1, bool backwards1, bool forward2, bool backward2,
           gfx->fillScreen(BLACK);
           gfx->setTextColor(WHITE);
           gfx->setCursor(gfx->width()/2 - 50, gfx->height()/2+5);
-          gfx->print(quizName);
-          if (push && !back) {
+          gfx->print("Quiz");
+          if (push) {
             gfx->fillScreen(BLACK);
             gfx->setTextColor(WHITE);
             resetQuiz();
@@ -403,14 +404,15 @@ void resetQuiz() {
 
 void addMode(int push, int back) {
   gfx->setTextSize(3,3);
-  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->setCursor(0, 50);
+  gfx->print("Score: ");
   gfx->print(currentScore);
   gfx->setCursor(0, gfx->height()/2);
   gfx->print(addNum1); gfx->print(" + "); gfx->print(addNum2); gfx->print(" = ");
   if (counter != 0) gfx->print(counter % 10);
   else gfx->print(" ");
   gfx->print(counter_2 % 10);
-  if(push && !back) {
+  if(push) {
     short calculatedSum = (counter%10)*10 + counter_2%10;
     if (sum == calculatedSum) {
       gfx->setCursor(10, 10);
@@ -439,14 +441,15 @@ void addMode(int push, int back) {
 }
 void subtractMode(int push, int back) {
   gfx->setTextSize(3,3);
-  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->setCursor(0, 50);
+  gfx->print("Score: ");
   gfx->print(currentScore);
   gfx->setCursor(0, gfx->height()/2);
   gfx->print(subNum1); gfx->print(" - "); gfx->print(subNum2); gfx->print(" = ");
   if (counter != 0) gfx->print(counter % 10);
   else gfx->print(" ");
   gfx->print(counter_2 % 10);
-  if((push && !back)) {
+  if(push) {
     short calculatedDifference = (counter%10)*10 + counter_2%10;
     if (difference == calculatedDifference) {
       gfx->setCursor(10, 10);
@@ -475,14 +478,15 @@ void subtractMode(int push, int back) {
 }
 void multiplyMode(int push, int back) {
   gfx->setTextSize(3,3);
-  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->setCursor(0, 50);
+  gfx->print("Score: ");
   gfx->print(currentScore);
   gfx->setCursor(0, gfx->height()/2);
   gfx->print(multNum1); gfx->print(" * "); gfx->print(multNum2); gfx->print(" = ");
   if (counter != 0) gfx->print(counter % 10);
   else gfx->print(" ");
   gfx->print(counter_2 % 10);
-  if(push && !back) {
+  if(push) {
     short calculatedProduct = (counter%10)*10 + counter_2%10;
     if (product == calculatedProduct) {
       gfx->setCursor(10, 10);
@@ -511,14 +515,15 @@ void multiplyMode(int push, int back) {
 }
 void divideMode(int push, int back) {
   gfx->setTextSize(3,3);
-  gfx->setCursor(gfx->width()/2-10, gfx->height() + 10);
+  gfx->setCursor(0, 50);
+  gfx->print("Score: ");
   gfx->print(currentScore);
   gfx->setCursor(0, gfx->height()/2);
   gfx->print(divNum1); gfx->print(" ÷ "); gfx->print(divNum2); gfx->print(" = ");
   if (counter != 0) gfx->print(counter % 10);
   else gfx->print(" ");
   gfx->print(counter_2 % 10);
-  if(push && !back) {
+  if(push) {
     short calculatedQuotient = (counter%10)*10 + counter_2%10;
     if (quotient == calculatedQuotient) {
       gfx->setCursor(10, 10);
@@ -616,4 +621,5 @@ void read_encoder_2() {
     counter_2 = counter_2 + changevalue;              // Update counter
     encval = 0;
   }
-} 
+}
+
