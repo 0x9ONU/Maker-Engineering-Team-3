@@ -7,7 +7,7 @@
 #define TFT_RST 33
 #define TFT_SCK 18
 #define TFT_MOSI 23
-#define TFT_MISO 29
+#define TFT_MISO 19
 #define TFT_LED 22
 #define E1_OUT_A 26
 #define E1_OUT_B 25
@@ -16,6 +16,10 @@
 #define E2_OUT_B 14
 #define E2_PUSH 21
 #define MENU_BUTTON 13
+#define CS_SD 15
+#define MOST_SD 5
+#define MISO_SD 2
+#define CLK_SD 35
 
 
 /* More dev device declaration: https://github.com/moononournation/Arduino_GFX/wiki/Dev-Device-Declaration */
